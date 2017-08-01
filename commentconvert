@@ -1,0 +1,182 @@
+#ifndef __COMMENT_CONVER_H__  
+#define __COMMENT_CONVER_H__  
+#include<stdio.h>  
+#include<stdlib.h>  
+enum STATE  
+{  
+	END_STATE,
+	NUL_STATE,
+	C_STATE,  
+	CPP_STATE,  
+};  
+
+void donulstate(FILE *pfin, FILE *pfout, enum STATE *s);  
+void docstate(FILE *pfin, FILE *pfout, enum STATE *s); 
+void docppstate(FILE *pfin, FILE *pfout, enum STATE *s);  
+
+#endif  
+#define _CRT_SECURE_NO_WARNINGS 1  
+#include"CommentConver.h"  
+void donulstate(FILE *pfin, FILE *pfout, enum STATE *s)  
+{  
+	int first =0;  
+	first = fgetc(pfin);  
+	switch (first)  
+	{  
+	case '/': 
+		{  
+			int sceond = fgetc(pfin);  
+			switch (sceond)  
+			{  
+			case '/': 
+				{  
+					*s = CPP_STATE;
+					fputc(first, pfout);  
+					fputc(sceond, pfout);  
+				}  
+				break;  
+			case '*':
+				{  
+					*s = C_STATE;
+					fputc('/', pfout);  
+					fputc('/', pfout);    
+				}  
+				break;  
+			default:
+				{  
+					fputc(first, pfout);  
+					fputc(sceond, pfout);  
+				}  
+				break;  
+			}  
+		}  
+		break;  
+	case EOF:
+		{  
+			*s = END_STATE;   
+		}  
+		break;  
+	default:
+		{  
+			fputc(first, pfout);  
+		}  
+		break;  
+	}  
+}  
+void docstate(FILE *pfin, FILE *pfout, enum STATE *s)  
+{  
+	int first = 0;  
+	first = fgetc(pfin);  
+	switch (first)  
+	{  
+	case '*': 
+		{  
+			int sceond = 0;  
+			sceond = fgetc(pfin);  
+			switch (sceond)  
+			{  
+			case '/':  
+				{  
+					*s = NUL_STATE; 
+				}  
+				break;  
+			case '*':
+				{  
+					fputc(first, pfout);  
+					ungetc(sceond, pfin);  
+				}  
+				break;  
+			default:
+				{  
+					fputc(first, pfout);  
+					fputc(sceond, pfout);  
+				}  
+			}  
+		}  
+		break;  
+	case '\n':
+		{  
+			fputc(first, pfout);  
+			fputc('/', pfout);  
+			fputc('/', pfout);  
+		}  
+		break;  
+	default:
+		{  
+			fputc(first, pfout);  
+		}  
+		break;  
+	}  
+}  
+
+void docppstate(FILE *pfin, FILE *pfout, enum STATE *s)  
+{  
+	int first = 0;  
+	first = fgetc(pfin);  
+	switch (first)  
+	{  
+	case '\n':
+		{  
+			fputc(first, pfout);  
+			*s = NUL_STATE;  
+		}  
+		break;  
+	case EOF:
+		{  
+			*s = END_STATE;  
+		}  
+		break;  
+	default:
+		fputc(first, pfout);  
+		break;  
+	}  
+}  
+
+#define _CRT_SECURE_NO_WARNINGS 1 
+#include"CommentConver.h"  
+
+void commentconver(FILE *pfin, FILE *pfout)  
+{  
+	enum state state = NUL_STATE;
+	while (state != END_STATE)
+	{  
+		switch (state)
+		{  
+		case NUL_STATE:  
+			donulstate(pfin,pfout,&state);  
+			break;  
+		case C_STATE:  
+			docstate(pfin, pfout, &state);  
+			break;  
+		case CPP_STATE:  
+			docppstate(pfin, pfout, &state);  
+			break;  
+		}  
+	}  
+}  
+void test()  
+{  
+	FILE *pfin = fopen("input.c", "r");
+	FILE *pfout = fopen("output.c", "w");
+	if (pfin == NULL)  
+	{  
+		perror("use open file read");  
+		exit(EXIT_FAILURE);  
+	}  
+
+	if (pfout == NULL)  
+	{  
+		perror("use open file write");  
+		exit(EXIT_FAILURE);  
+	}  
+	//  
+	commentconver(pfin, pfout);
+	fclose(pfin);  
+	fclose(pfout);  
+}  
+int main()  
+{  
+	test();  
+	system("pause");  
+	return 0;  
+}  
